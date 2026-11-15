@@ -1,0 +1,177 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id             Int            @id @default(autoincrement())
+  email          String         @unique
+  password       String
+  name           String
+  role           String         @default("USER")
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  refreshTokens  RefreshToken[]
+  stressPulses   StressPulse[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("refresh_tokens")
+}
+
+model StressPulse {
+  id             Int      @id @default(autoincrement())
+  userId         Int
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stressLevel    Float
+  organizationId Int?
+  timestamp      DateTime @default(now())
+
+  @@index([userId, timestamp])
+  @@index([userId, organizationId, timestamp])
+  @@map("stress_pulses")
+}
+
+model Subscription {
+  id             Int      @id @default(autoincrement())
+  organizationId Int      @unique @default(1)
+  plan           String   @default("ENTERPRISE")
+  status         String   @default("ACTIVE")
+  amount         Float    @default(499.00)
+  currency       String   @default("EUR")
+  seatLimit      Int      @default(750)
+  currentPeriodEnd DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("subscriptions")
+}
+
+// 🚀 ANALITIČKO JEZGRO: Model koji prati pokrenute wellness kampanje od strane HR menadžmenta
+model Intervention {
+  id             Int      @id @default(autoincrement())
+  organizationId Int      @default(1)
+  type           String   // STRESS_AUDIO_CDN, NUTRI_FLOW_ALIGNMENT, HYDRO_ALERT
+  cohort         String   // Engineering, Marketing, Sales, All
+  active         Boolean  @default(true)
+  launchedAt     DateTime @default(now())
+  endedAt        DateTime?
+
+  @@map("interventions")
+}
+
+
+model StressIntervention {
+  id             Int                   @id @default(autoincrement())
+  userId         Int
+  organizationId Int?
+  stressLogId    Int
+  type           String
+  recommendation String
+  status         String                @default("ACTIVE")
+  createdAt      DateTime              @default(now())
+  completedAt    DateTime?
+  outcomes       InterventionOutcome[]
+
+  @@index([userId, createdAt])
+  @@index([organizationId, createdAt])
+}
+
+model InterventionOutcome {
+  id             Int                @id @default(autoincrement())
+  interventionId Int
+  stressBefore   Float
+  stressAfter    Float?
+  completed      Boolean            @default(false)
+  feedback       String?
+  measuredAt     DateTime           @default(now())
+  intervention   StressIntervention @relation(fields: [interventionId], references: [id], onDelete: Cascade)
+
+  @@index([interventionId, measuredAt])
+}
+
+
+model InterventionEffectiveness {
+  id               Int      @id @default(autoincrement())
+  userId           Int
+  interventionType String
+  attempts         Int      @default(0)
+  successful       Int      @default(0)
+  avgStressDelta   Float    @default(0)
+  effectiveness    Float    @default(0)
+  updatedAt        DateTime @updatedAt
+
+  @@unique([userId, interventionType])
+  @@index([userId, effectiveness])
+}
+
+model OrganizationInterventionMetric {
+  id               Int      @id @default(autoincrement())
+  organizationId   Int
+  interventionType String
+  sampleSize       Int      @default(0)
+  completionRate   Float    @default(0)
+  avgStressBefore  Float    @default(0)
+  avgStressAfter   Float    @default(0)
+  avgStressDelta   Float    @default(0)
+  effectiveness    Float    @default(0)
+  periodStart      DateTime
+  periodEnd        DateTime
+  updatedAt        DateTime @updatedAt
+
+  @@unique([organizationId, interventionType, periodStart, periodEnd])
+  @@index([organizationId, effectiveness])
+}
+
+model HealthIntegration {
+  id             Int       @id @default(autoincrement())
+  userId         Int
+  provider       String
+  externalUserId String?
+  accessStatus   String    @default("ACTIVE")
+  lastSyncAt     DateTime?
+
+  @@unique([userId, provider])
+  @@index([userId])
+}
+
+model PhysiologicalEvent {
+  id               BigInt   @id @default(autoincrement())
+  userId           Int
+  integrationId    Int
+  timestamp        DateTime
+  heartRate        Float?
+  restingHeartRate Float?
+  hrv              Float?
+  sleepMinutes     Int?
+  steps            Int?
+  source           String
+  createdAt        DateTime @default(now())
+
+  @@index([userId, timestamp])
+  @@index([integrationId, timestamp])
+}
+
+model HealthDataConsent {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  provider    String
+  granted     Boolean  @default(false)
+  grantedAt   DateTime?
+  revokedAt   DateTime?
+
+  @@unique([userId, provider])
+}

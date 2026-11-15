@@ -1,0 +1,26 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${RELIEVE_POSTGRES_USER:-relieve}
+      POSTGRES_PASSWORD: ${RELIEVE_POSTGRES_PASSWORD:?Set RELIEVE_POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${RELIEVE_POSTGRES_DB:-relieve}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - relieve_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${RELIEVE_POSTGRES_USER:-relieve} -d ${RELIEVE_POSTGRES_DB:-relieve}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - relieve_data
+
+volumes:
+  relieve_postgres_data:
+
+networks:
+  relieve_data:
+    internal: true

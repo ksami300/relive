@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+
+# Build output
+/dist/
+/.next/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Logs and runtime artifacts
+*.log
+logs/
+*.pid
+
+# Generated files
+coverage/
+.tmp/
+.cache/
+
+# Private keys, certificates, and local database files
+*.key
+*.pem
+*.p12
+*.pfx
+*.p7b
+*.p7c
+*.crt
+*.cer
+*.der
+*.jks
+*.keystore
+*.db
+*.sqlite
+*.sqlite3
+
+# Keep static export output tracked until hosting strategy is confirmed.
+# If Vercel static export is not required, review and remove this exception explicitly.
+# out/
