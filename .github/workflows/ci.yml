@@ -1,0 +1,23 @@
+﻿name: Relive CI
+on: [push, pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Backend Typecheck & Tests
+        working-directory: ./backend
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/relieve_ci
+          JWT_SECRET: ci_relieve_jwt_secret_key_2026_prod
+          JWT_REFRESH_SECRET: ci_relieve_refresh_secret_key_2026_prod
+        run: npm ci && npx prisma generate && npm run typecheck && npm test
+      - name: Frontend Build
+        working-directory: ./frontend
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:4000
+          NEXT_PUBLIC_SOCKET_URL: http://localhost:4000
+        run: npm ci && npm run build
