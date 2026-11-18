@@ -6,11 +6,14 @@
   public isPlaying = false;
   public currentFreq = 432;
 
-  start(freq = 432) {
+  async start(freq = 432) {
     if (typeof window === "undefined") return;
     this.stop();
     const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     this.ctx = new AudioCtx();
+    if (this.ctx.state === "suspended") {
+      await this.ctx.resume();
+    }
     this.currentFreq = freq;
 
     this.oscMain = this.ctx.createOscillator();
@@ -24,7 +27,7 @@
     this.oscSub.frequency.setValueAtTime(freq / 2, this.ctx.currentTime);
 
     this.gainNode.gain.setValueAtTime(0.001, this.ctx.currentTime);
-    this.gainNode.gain.exponentialRampToValueAtTime(0.08, this.ctx.currentTime + 1.2);
+    this.gainNode.gain.exponentialRampToValueAtTime(0.12, this.ctx.currentTime + 0.8);
 
     this.oscMain.connect(this.gainNode);
     this.oscSub.connect(this.gainNode);
@@ -42,12 +45,12 @@
     this.isPlaying = false;
   }
 
-  toggle(freq = 432): boolean {
+  async toggle(freq = 432): Promise<boolean> {
     if (this.isPlaying && this.currentFreq === freq) {
       this.stop();
       return false;
     }
-    this.start(freq);
+    await this.start(freq);
     return true;
   }
 }
